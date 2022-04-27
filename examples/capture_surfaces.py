@@ -10,6 +10,6 @@ json_out_file = "surfaces.json"
 S = Segmentation(csv_file, array_template)
 
 async def task():
-    await S.capture_surfaces_as_json(lineage, json_out_file)
+    await S.capture_surfaces_as_json(lineage, json_out_file, link=True)
 
 serve(task())

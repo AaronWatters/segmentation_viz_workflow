@@ -62,8 +62,15 @@ class Segmentation:
                 result[ln] = ln
         return result
 
-    async def capture_surfaces_as_json(self, for_lineage, to_json_path, blur=0.7, exit_when_done=True):
-        SM = surfaces_sequence.SurfaceMaker(blur=blur)
+    async def capture_surfaces_as_json(
+        self, 
+        for_lineage, 
+        to_json_path, 
+        blur=0.7, 
+        exit_when_done=True,
+        link=False,
+        ):
+        SM = surfaces_sequence.SurfaceMaker(blur=blur, link=link)
         self.surface_maker = SM
         print("Using browser interface for capturing surface geometries.")
         count = 0
