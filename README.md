@@ -56,6 +56,10 @@ The script uses a browser interface to extract the geometries.
 % python capture_surfaces.py
 ```
 
+The processor uses WebGL in a browser to capture the surfaces.
+Open the link printed by the script in a browser to establish
+the browser connection and start the capture process.
+
 **Important**: The browser tab for capturing the surfaces does not exit automatically.
 Close the tab manually once the script completes.
 
@@ -67,8 +71,11 @@ After the capture process is complete view the surfaces using the `view_surfaces
 ```bash
 % python view_surfaces.py
 ```
-Press the load button to load the JSON data (this step is for easy javascript debugging).
-The viewer should appear in a new browser tab and look something like this:
+
+Open the link printed by the script in a browser tab to view the surfaces.
+
+Press the load button to load the JSON data (this step is provided for easy javascript debugging).
+The viewer should look something like this:
 
 <img src="surface.png">
 
