@@ -1,5 +1,6 @@
 
 import csv
+from cv2 import line
 from mouse_embryo_labeller import color_list, tools
 from feedWebGL2 import surfaces_sequence
 import numpy as np
@@ -27,7 +28,7 @@ class Segmentation:
         float_colors = np.array(color_list.color_arrays) / 255.0
         self.branch_to_color = {b: float_colors[i] for (i, b) in enumerate(self.branches)}
 
-    def color_dict(self, ts, lineage):
+    def color_dict(self, ts, lineage, color):
         "Mapping of label to color for timestamp and lineage."
         result = {}
         ts = int(ts)
@@ -37,7 +38,10 @@ class Segmentation:
                 b = d["Branch"]
                 #ln = d["label_num"] wrong
                 ln = int(d['Cell_Label'])
-                result[ln] = self.branch_to_color[b].tolist()
+                if color is None:
+                    result[ln] = self.branch_to_color[b].tolist()
+                else:
+                    result[ln] = list(color)
         return result
 
     def labels_array(self, ts):
@@ -70,6 +74,33 @@ class Segmentation:
         exit_when_done=True,
         link=False,
         ):
+        """
+        Capture surfaces for cells in a single lineage
+        """
+        return await self.capture_lineages_as_json(
+            lineage_to_color={for_lineage: None},
+            to_json_path=to_json_path,
+            blur=blur,
+            exit_when_done=exit_when_done,
+            link=link,
+        )
+
+    async def capture_lineages_as_json(
+        self, 
+        lineage_to_color, 
+        to_json_path, 
+        blur=0.7, 
+        exit_when_done=True,
+        link=False,
+        ):
+        # sanity check
+        colors = list(c for c in lineage_to_color.values() if c is not None)
+        if colors:
+            colors = np.array(colors)
+            assert colors.min() >= 0, "colors must be non-negative " + repr(colors)
+            assert colors.max() <= 1, "colors must be between 0 and 1 " + repr(colors)
+            (nr, nc) = colors.shape
+            assert nc == 3, "colors must be rgb between 0 and 1 " + repr(colors)
         SM = surfaces_sequence.SurfaceMaker(blur=blur, link=link)
         self.surface_maker = SM
         print("Using browser interface for capturing surface geometries.")
@@ -81,11 +112,17 @@ class Segmentation:
             if la is None:
                 print ("    WARNING:::: Stopping because label array was not found for ts", ts)
                 break
-            cd = self.color_dict(ts, for_lineage)
-            ld = self.label_dict(ts, for_lineage)
-            print("labels", list(ld.keys()))
             print("array", la.shape)
-            await SM.add_surfaces(la, ld, cd)
+            all_cd = {}
+            all_ld = {}
+            for (lineage, color) in lineage_to_color.items():
+                print("    lineage", (lineage, color))
+                cd = self.color_dict(ts, lineage, color)
+                all_cd.update(cd)
+                ld = self.label_dict(ts, lineage)
+                all_ld.update(ld)
+            print("    labels", list(all_cd.items()))
+            await SM.add_surfaces(la, all_ld, all_cd)
             count += 1
         assert count > 1, "No labels arrays found."
         print()
