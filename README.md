@@ -80,3 +80,11 @@ The viewer should look something like this:
 <img src="surface.png">
 
 Please use the source code and examples to generate surfaces for other data sets.
+
+# Viewing multiple lineages
+
+The scripts `examples/capture_lineages.py` and `examples/view_lineages.py` illustrate how to
+process and view multiple lineages using specified colors for each lineage.  Please look to
+the scripts for more information.
+
+<img src="lineage.png">
