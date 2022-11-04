@@ -4,7 +4,7 @@ OO structure for cell lineage tracking.
 """
 
 
-from optparse import NO_DEFAULT
+from array_gizmos import color_list
 
 
 class Node:
@@ -229,6 +229,18 @@ class Forest:
             ts.reset()
         self.id_to_lineage = None
         self.id_to_track = {}
+
+    def assign_colors_to_lineages(self):
+        return self.assign_colors_to_tracks(id_to_collection=self.id_to_lineage)
+
+    def assign_colors_to_tracks(self, id_to_collection=None):
+        if id_to_collection is None:
+            id_to_collection = self.id_to_track
+        for (index, identifier) in enumerate(sorted(id_to_collection.keys())):
+            collection = id_to_collection[identifier]
+            color = color_list.rgbhtml(color_list.indexed_color(index))
+            for node in collection.id_to_node.values():
+                node.color = color
 
     def find_tracks_and_lineages(self):
         self.reset()
