@@ -4,6 +4,9 @@ OO structure for cell lineage tracking.
 """
 
 
+from optparse import NO_DEFAULT
+
+
 class Node:
 
     "A cell in a timestamp."
@@ -21,13 +24,14 @@ class Node:
         self._lineage_root = None
         self._width = None
         self._offset = None
+        self._is_isolated = None  # not determined
         self.color = None
 
     def json_object(self):
         parent_id = None
         if self.parent is not None:
             parent_id = self.parent.node_id
-        isolated = (self.parent_id is None) and (len(self.id_to_child) < 1)
+        isolated = (self.parent is None) and (len(self.id_to_child) < 1)
         return dict(
             identity=self.node_id,
             timestamp_ordinal=self.timestamp_ordinal,
@@ -156,6 +160,14 @@ class NodeGroup:
     def reset(self):
         pass # by default do nothing
 
+    def isolated(self):
+        return len(self.id_to_node) < 2
+
+    def mark_isolated(self):
+        test = self.isolated()
+        for node in self.id_to_node.values():
+            node._is_isolated = test
+
 class TimeStamp(NodeGroup):
 
     "A time reference point."
@@ -166,6 +178,15 @@ class TimeStamp(NodeGroup):
     def check_node(self, node):
         ord = self.ordinal
         assert ord == node.timestamp_ordinal, "node not in timestamp: " + repr([ord, node])
+
+    def farthest_parent_ordinal(self):
+        result = None
+        for node in self.id_to_node.values():
+            if node.parent is not None:
+                ordinal = node.parent.timestamp_ordinal
+                if (result is None) or (result > ordinal):
+                    result = ordinal
+        return result
 
     def json_object(self):
         return dict(
@@ -231,7 +252,20 @@ class Forest:
         i2l = self.id_to_lineage
         assert i2l is not None, "lineages must be assigned first."
         cursor = start_at
+        # assign isolated lineages after all non-isolated
+        for rootid in i2l.keys():
+            # mark isolated nodes for downstream testing
+            lineage = i2l[rootid]
+            lineage.mark_isolated()
+        isolated_roots = []
         for rootid in sorted(i2l.keys()):
+            if lineage.isolated():
+                isolated_roots.append(rootid)
+            else:
+                lineage = i2l[rootid]
+                cursor = lineage.root.assign_offsets(cursor) + 1
+        # set isolated offsets higher...
+        for rootid in isolated_roots:
             lineage = i2l[rootid]
             cursor = lineage.root.assign_offsets(cursor) + 1
 
@@ -251,6 +285,60 @@ class Forest:
         else:
             result = i2t[ordinal] = TimeStamp(ordinal)
         return result
+
+    def json_ob(self, exclude_isolated=True):
+        (width, height) = self.dimensions()
+        id_to_node = self.id_to_node
+        if exclude_isolated:
+            id_to_node = {ident: node for (ident, node) in self.id_to_node.items() if not node._is_isolated}
+        id_to_node_json = {ident: node.json_object() for (ident, node) in id_to_node.items()}
+        return dict(
+            width=width,
+            height=height,
+            id_to_node=id_to_node_json,
+        )
+
+    def timestamp_region_json(self, ordinal):
+        """
+        Node info for nodes in timestamp, its predecessor and all directly connected ancestor timestamps.
+        """
+        # always include isolated nodes (?)
+        o2t = self.ordinal_to_timestamp
+        ordinals = set([ordinal])
+        all_ordinals = sorted(o2t.keys())
+        index = all_ordinals.index(ordinal)
+        if index > 0:
+            pred = all_ordinals[index - 1]
+            # always add any pred timestamp
+            ordinals.add(pred)
+        ts = o2t[ordinal]
+        farthest = ts.farthest_parent_ordinal()
+        # also add directly connected older timestamps
+        for ord in all_ordinals:
+            if (ord <= ordinal) and (ord >= farthest):
+                ordinals.add(ord)
+        # dump nodes and adjust geometry
+        id_to_node = {}
+        for ord in ordinals:
+            this_ts = o2t[ord]
+            #print("updating", list(this_ts.id_to_node.keys()))
+            id_to_node.update(this_ts.id_to_node)
+        id_to_node_json = {}
+        offsets = sorted(set(node._offset for node in id_to_node.values()))
+        sordinals = sorted(ordinals)
+        height = len(sordinals)
+        for (id, node) in id_to_node.items():
+            json_ob = node.json_object()
+            # patch in relative geometry
+            json_ob["x"] = offsets.index(node._offset)
+            json_ob["y"] = height - sordinals.index(node.timestamp_ordinal) - 1
+            id_to_node_json[id] = json_ob
+        return dict(
+            id_to_node=id_to_node_json,
+            width=len(offsets),
+            height=height,
+            ordinals=sordinals,
+        )
 
     def dimensions(self):
         # assuming timestamps start at 0 or 1
