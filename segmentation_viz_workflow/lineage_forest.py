@@ -344,6 +344,8 @@ class Forest:
             # patch in relative geometry
             json_ob["x"] = offsets.index(node._offset)
             json_ob["y"] = height - sordinals.index(node.timestamp_ordinal) - 1
+            # child marker
+            json_ob["is_child"] = (json_ob["timestamp_ordinal"] == ordinal)
             id_to_node_json[id] = json_ob
         return dict(
             id_to_node=id_to_node_json,
