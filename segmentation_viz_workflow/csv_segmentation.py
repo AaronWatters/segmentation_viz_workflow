@@ -1,6 +1,5 @@
 
 import csv
-from cv2 import line
 from mouse_embryo_labeller import color_list, tools
 from feedWebGL2 import surfaces_sequence
 import numpy as np
