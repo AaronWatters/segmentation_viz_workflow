@@ -52,6 +52,27 @@ class TimeSliceDetail {
                 color: color,
             });
         }
+        
+        for (var id in i2n) {
+            var n = i2n[id];
+            var pid = n.parent_id;
+            if (pid) {
+                var p = i2n[pid];
+                console.log("parentage", id, n, pid, p);
+                if (p) {
+                    var x1 = n.x;
+                    var y1 = n.y;
+                    var x2 = p.x;
+                    var y2 = p.y;
+                    f.line({
+                        x1: x1 + 0.5,
+                        y1: y1 + 0.8,
+                        x2: x2 + 0.5,
+                        y2: y2 + 0.2,
+                    })
+                }
+            }
+        } 
         this.child_rect = f.frame_rect({
             name: true,
             color: invisible,
