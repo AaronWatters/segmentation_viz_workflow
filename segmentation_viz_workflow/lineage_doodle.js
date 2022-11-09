@@ -2,6 +2,66 @@
 var invisible = "rgba(0,0,0,0)";
 var semi_transparent = "rgba(0,0,0,0.1)";
 
+class LineageDisplay {
+    // xxxx Should refactor/unify with TS detail belows
+    constructor(element, width, height) {
+        this.element = element;
+        this.width = width;
+        this.height = height;
+        var config = {
+            width: width,
+            height: height,
+        };
+        this.canvas_element = $("<div/>").appendTo(element);
+        this.status_element = $("<div>Lineage canvas initialized</div>").appendTo(element);
+        this.canvas_element.dual_canvas_helper(config);
+        this.frame = null;
+    }
+    load_json(json_ob) {
+        var that = this;
+        var element = this.canvas_element;
+        element.reset_canvas();
+        this.status_element.html("Drawing lineage.");
+        // Y inverted!
+        var f = element.frame_region(
+            0, 0, this.width, this.height,
+            -1, json_ob.height + 1, json_ob.width + 1, -1,
+        );
+        self.frame = f;
+        var i2n = json_ob.id_to_node;
+        for (var id in i2n) {
+            var n = i2n[id];
+            var x = n.offset;
+            var y = n.timestamp_ordinal;
+            var color = n.color || "#999";
+            f.frame_rect({
+                x: x,
+                y: y,
+                w: 0.6,
+                h: 0.6,
+                dx: 0.2,
+                dy: 0.2,
+                color: color,
+            });
+            var pid = n.parent_id;
+            if (pid) {
+                var p = i2n[pid];
+                //console.log("parentage", id, n, pid, p);
+                if (p) {
+                    var x2 = p.offset;
+                    var y2 = p.timestamp_ordinal;
+                    f.line({
+                        x1: x2 + 0.5,
+                        y1: y2 + 0.8,
+                        x2: x + 0.5,
+                        y2: y + 0.2,
+                    })
+                }
+            }
+        }
+    }
+}
+
 class TimeSliceDetail {
     constructor(element, width, height) {
         this.element = element;
@@ -12,7 +72,7 @@ class TimeSliceDetail {
             height: height,
         };
         this.canvas_element = $("<div/>").appendTo(element);
-        this.status_element = $("<div>Canvas initialized</div>").appendTo(element);
+        this.status_element = $("<div>timeslice detail canvas initialized</div>").appendTo(element);
         this.canvas_element.dual_canvas_helper(config);
         this.frame = null;
         /*
@@ -28,7 +88,7 @@ class TimeSliceDetail {
         this.hovering_node = null;
         this.selected_child = null;
         this.selected_ancestor = null;
-        this.status_element.html("Drawing.")
+        this.status_element.html("Drawing timeslice.");
         var element = this.canvas_element;
         element.reset_canvas();
         var f = element.frame_region(
@@ -58,7 +118,7 @@ class TimeSliceDetail {
             var pid = n.parent_id;
             if (pid) {
                 var p = i2n[pid];
-                console.log("parentage", id, n, pid, p);
+                //console.log("parentage", id, n, pid, p);
                 if (p) {
                     var x1 = n.x;
                     var y1 = n.y;
@@ -204,5 +264,7 @@ class TimeSliceDetail {
 };
 
 window.TimeSliceDetail = TimeSliceDetail
+
+window.LineageDisplay = LineageDisplay;
 
 console.log("lineage_doodle.js loaded.")

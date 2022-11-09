@@ -32,6 +32,18 @@ class TimeSliceDetail:
     def load_json(self, json_ob):
         do(self.detail_link.load_json(json_ob))
 
+class LineageDisplay(TimeSliceDetail):
+
+    def configure_canvas(self):
+        # run after gizmo is displayed.
+        gizmo = self.gizmo
+        element = gizmo.element
+        window = gizmo.window
+        do(self.gizmo.element.empty())
+        self.detail_link = gizmo.cache("tsdetail", gizmo.new(window.LineageDisplay, element, self.width, self.height))
+        #do(init)
+
+
 async def test_task():
     from H5Gizmos import Html
     greeting = Html("<h1>Hello</h1>")
