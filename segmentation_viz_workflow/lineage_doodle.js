@@ -12,6 +12,7 @@ class TimeSliceDetail {
             height: height,
         };
         this.canvas_element = $("<div/>").appendTo(element);
+        this.status_element = $("<div>Canvas initialized</div>").appendTo(element);
         this.canvas_element.dual_canvas_helper(config);
         this.frame = null;
         /*
@@ -27,6 +28,7 @@ class TimeSliceDetail {
         this.hovering_node = null;
         this.selected_child = null;
         this.selected_ancestor = null;
+        this.status_element.html("Drawing.")
         var element = this.canvas_element;
         element.reset_canvas();
         var f = element.frame_region(
@@ -50,6 +52,30 @@ class TimeSliceDetail {
                 color: color,
             });
         }
+        this.child_rect = f.frame_rect({
+            name: true,
+            color: invisible,
+            x: 0,
+            y: 0,
+            w: 0.8,
+            h: 0.8,
+            dx: 0.1,
+            dy: 0.1,
+            fill: false,
+            lineWidth: 3,
+        });
+        this.ancestor_rect = f.frame_rect({
+            name: true,
+            color: invisible,
+            x: 0,
+            y: 0,
+            w: 0.8,
+            h: 0.8,
+            dx: 0.1,
+            dy: 0.1,
+            fill: false,
+            lineWidth: 3,
+        });
         this.hover_rect = f.frame_rect({
             name: true,
             color: invisible,
@@ -74,22 +100,54 @@ class TimeSliceDetail {
         this.event_rect.on("click", event_click);
 
     };
+    update_status() {
+        var h = this.hovering_node;
+        var c = this.selected_child;
+        var a = this.selected_ancestor;
+        var status = "";
+        if (c) {
+            var cp = "(no parent)";
+            if (c.parent_id) {
+                cp = `[${c.parent_id}]`;
+            }
+            status += `Child ${c.identity} ${cp}; `;
+        }
+        if (a) {
+            status += `Ancestor ${a.identity}; `;
+        }
+        if (h) {
+            status += `Hover ${h.identity}; `;
+        }
+        this.status_element.html(status)
+    }
     select_node(event) {
         var loc = event.model_location;
         var nearest = this.nearest_node(loc);
         if (nearest.is_child) {
             console.log("selected child", nearest);
+            this.child_rect.change({
+                x: nearest.x,
+                y: nearest.y,
+                color: "black",
+            });
             this.selected_child = nearest;
         } else {
             console.log("selected ancestor", nearest);
+            this.ancestor_rect.change({
+                x: nearest.x,
+                y: nearest.y,
+                color: "silver",
+            });
             this.selected_ancestor = nearest;
         }
+        this.update_status();
     }
     no_hover() {
         this.hovering_node = null;
         this.hover_rect.change({
             color: invisible,
         });
+        this.update_status();
     }
     update_hover(event) {
         //console.log("update hover", event);
@@ -101,6 +159,7 @@ class TimeSliceDetail {
             color: semi_transparent,
         });
         this.hovering_node = nearest;
+        this.update_status();
     };
     nearest_node(loc) {
         var nearest = null;
