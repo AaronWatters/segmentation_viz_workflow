@@ -16,9 +16,13 @@ class LineageDisplay {
         this.status_element = $("<div>Lineage canvas initialized</div>").appendTo(element);
         this.canvas_element.dual_canvas_helper(config);
         this.frame = null;
+        this.hovered_ts = null;
+        this.selected_ts = null;
+        this.json_ob = null;
     }
     load_json(json_ob) {
         var that = this;
+        this.json_ob = json_ob;
         var element = this.canvas_element;
         element.reset_canvas();
         this.status_element.html("Drawing lineage.");
@@ -59,7 +63,73 @@ class LineageDisplay {
                 }
             }
         }
-    }
+        this.hover_rect = f.frame_rect({
+            name: true,
+            color: invisible,
+            x: 0,
+            y: 0,
+            w: json_ob.width,
+            h: 1,
+        });
+        this.select_rect = f.frame_rect({
+            name: true,
+            color: invisible,
+            x: 0,
+            y: 0,
+            w: json_ob.width,
+            h: 1,
+            fill: false,
+        });
+        this.event_rect = f.frame_rect({
+            name: true,
+            color: invisible,
+            x: 0,
+            y: 0,
+            w: json_ob.width,
+            h: json_ob.height,
+        });
+        var event_hover = function(event) { that.update_hover(event); };
+        this.event_rect.on("mousemove", event_hover);
+        var event_out = function(event) { that.no_hover(event); };
+        this.event_rect.on("mouseout", event_out);
+        var event_click = function(event) { that.select_ts(event); };
+        this.event_rect.on("click", event_click);
+    };
+    update_hover(event) {
+        var loc = event.model_location;
+        var nearest = this.nearest_ts(loc);
+        this.hover_rect.change({
+            y: nearest,
+            color: semi_transparent,
+        })
+        this.hovered_ts = nearest;
+    };
+    select_ts(event) {
+        var loc = event.model_location;
+        var nearest = this.nearest_ts(loc);
+        this.select_rect.change({
+            y: nearest,
+            color: "black",
+        })
+        this.selected_ts = nearest;
+    };
+    no_hover(event) {
+        this.hover_rect.change({
+            color: invisible,
+        })
+        this.hovered_ts = null;
+    };
+    nearest_ts(loc) {
+        var json_ob = this.json_ob;
+        var ts = Math.floor(loc.y);
+        if (ts < 0) {
+            ts = 0;
+        }
+        if (ts > json_ob.height) {
+            ts = json_ob.heignt;
+        }
+        return ts;
+    };
 }
 
 class TimeSliceDetail {
