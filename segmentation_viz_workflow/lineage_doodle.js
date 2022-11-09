@@ -20,6 +20,18 @@ class LineageDisplay {
         this.selected_ts = null;
         this.json_ob = null;
     }
+    update_status() {
+        var h = this.hovered_ts;
+        var s = this.selected_ts;
+        var status = "Lineage time stamps: ";
+        if (s !== null) {
+            status += ` Selected ${s};`
+        }
+        if (h !== null) {
+            status += ` Hover ${h};`
+        }
+        this.status_element.html(status)
+    }
     load_json(json_ob) {
         var that = this;
         this.json_ob = json_ob;
@@ -41,10 +53,10 @@ class LineageDisplay {
             f.frame_rect({
                 x: x,
                 y: y,
-                w: 0.6,
-                h: 0.6,
-                dx: 0.2,
-                dy: 0.2,
+                w: 0.8,
+                h: 0.8,
+                dx: 0.1,
+                dy: 0.1,
                 color: color,
             });
             var pid = n.parent_id;
@@ -103,6 +115,7 @@ class LineageDisplay {
             color: semi_transparent,
         })
         this.hovered_ts = nearest;
+        this.update_status();
     };
     select_ts(event) {
         var loc = event.model_location;
@@ -112,12 +125,14 @@ class LineageDisplay {
             color: "black",
         })
         this.selected_ts = nearest;
+        this.update_status();
     };
     no_hover(event) {
         this.hover_rect.change({
             color: invisible,
         })
         this.hovered_ts = null;
+        this.update_status();
     };
     nearest_ts(loc) {
         var json_ob = this.json_ob;
@@ -269,7 +284,7 @@ class TimeSliceDetail {
         if (h) {
             status += `Hover ${h.identity}; `;
         }
-        this.status_element.html(status)
+        this.status_element.html(status);
     }
     select_node(event) {
         var loc = event.model_location;
