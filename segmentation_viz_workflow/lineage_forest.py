@@ -318,6 +318,14 @@ class Forest:
         o2t = self.ordinal_to_timestamp
         ordinals = set([ordinal])
         all_ordinals = sorted(o2t.keys())
+        if ordinal not in all_ordinals:
+            # hack boundary case
+            return dict(
+                id_to_node={},
+                width=1,
+                height=1,
+                ordinals=[],
+            )
         index = all_ordinals.index(ordinal)
         if index > 0:
             pred = all_ordinals[index - 1]
@@ -365,7 +373,13 @@ def make_forest_from_haydens_json_graph(json_graph):
     Read a JSON dump of matlab graph similar to "Gata6Nanog1.json".
     Return a forest.
     """
-    edges = json_graph['G_based_on_nn_combined']['Edges']
+    #edges = json_graph['G_based_on_nn_combined']['Edges']
+    edges = None
+    # hack to handle random naming changes.
+    for name in json_graph:
+        if name.startswith("G"):
+            edges = json_graph[name]["Edges"]
+    assert edges is not None, "Could not find edges: " + repr(list(json_graph.keys()))
     result = Forest()
     all_ids = set()
     parent_map = {}
