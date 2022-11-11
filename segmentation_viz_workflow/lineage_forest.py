@@ -22,6 +22,7 @@ class Node:
     def reset(self):
         self._track = None
         self._lineage_root = None
+        self._lineage_index = None
         self._width = None
         self._offset = None
         self._is_isolated = None  # not determined
@@ -174,10 +175,12 @@ class TimeStamp(NodeGroup):
 
     def __init__(self, ordinal):
         self.ordinal = ordinal
+        self.label_to_node = {}
 
     def check_node(self, node):
         ord = self.ordinal
         assert ord == node.timestamp_ordinal, "node not in timestamp: " + repr([ord, node])
+        self.label_to_node[node.label] = node
 
     def farthest_parent_ordinal(self):
         result = None
@@ -200,10 +203,16 @@ class Lineage(NodeGroup):
 
     def __init__(self, root):
         self.root = root
+        self.index = None
 
     def check_node(self, node):
         node_root = node.lineage_ancestor()
         assert node_root is self.root, "wrong lineage: " + repr([node, node_root, self.root])
+
+    def set_index(self, index):
+        self.index = index
+        for node in self.id_to_node.values():
+            node._lineage_index = index
 
 class Track(Lineage):
 
@@ -229,6 +238,7 @@ class Forest:
             ts.reset()
         self.id_to_lineage = None
         self.id_to_track = {}
+        self.track_order = None
 
     def assign_colors_to_lineages(self):
         return self.assign_colors_to_tracks(id_to_collection=self.id_to_lineage)
@@ -259,6 +269,12 @@ class Forest:
             i2l[ln.node_id].add_node(node)
         self.id_to_lineage = i2l
         self.id_to_track = i2t
+        # fix track ordering
+        s_ids = sorted(i2t.keys())
+        for (i, tid) in enumerate(s_ids):
+            tr = i2t[tid]
+            tr.set_index(i)
+        self.track_order = [i2t[tid] for tid in s_ids]
 
     def assign_offsets(self, start_at=0):
         i2l = self.id_to_lineage
