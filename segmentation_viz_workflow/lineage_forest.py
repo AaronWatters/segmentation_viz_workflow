@@ -27,6 +27,7 @@ class Node:
         self._offset = None
         self._is_isolated = None  # not determined
         self.color = None
+        self.color_array = None
 
     def json_object(self):
         parent_id = None
@@ -248,9 +249,11 @@ class Forest:
             id_to_collection = self.id_to_track
         for (index, identifier) in enumerate(sorted(id_to_collection.keys())):
             collection = id_to_collection[identifier]
-            color = color_list.rgbhtml(color_list.indexed_color(index))
+            color_array = color_list.indexed_color(index + 1)
+            color = color_list.rgbhtml(color_array)
             for node in collection.id_to_node.values():
                 node.color = color
+                node.color_array = color_array
 
     def find_tracks_and_lineages(self):
         self.reset()
