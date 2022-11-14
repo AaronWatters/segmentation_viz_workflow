@@ -3,14 +3,18 @@
 Displays for labels and images
 """
 
+import numpy as np
 from H5Gizmos import Stack, Slider, Image, Shelf, Button, Text, RangeSlider
-from array_gizmos import colorizers
+from array_gizmos import colorizers, operations3d
 
 
 class compareTimeStamps:
     """
     Show image and labels for 2 time stamps.
     """
+
+    def __init__(self, forest):
+        self.forest = forest
 
 class ImageAndLabels2d:
 
@@ -32,6 +36,8 @@ class ImageAndLabels2d:
             self.info_area,
             displays,
         ])
+        self.img_volume = None
+        self.label_volume = None
         self.reset(timestamp)
 
     def reset(self, timestamp):
@@ -43,6 +49,14 @@ class ImageAndLabels2d:
         self.focus_label = None
         self.compare_mask = None
         self.compare_color = None
+
+    def load_volumes(self, label_volume, image_volume):
+        l_s = label_volume.shape
+        i_s = image_volume.shape
+        assert l_s == i_s, "volume shapes don't match: " + repr([l_s, i_s])
+        slicing = operations3d.positive_slicing(label_volume)
+        self.label_volume = operations3d.slice3(label_volume)
+        self.image_volume = operations3d.slice3(image_volume)
 
     def info(self, text):
         self.info_area.text(text)
@@ -101,5 +115,28 @@ class ImageAndLabels2d:
             if mask is not None:
                 assert color is not None, "no color for mask?"
                 img = colorizers.overlay_color(img, mask, color)
+        img = self.pad_image(img)
+        labels = self.pad_image(labels)
         self.image_display.change_array(img)
         self.labels_display.change_array(labels)
+
+    def pad_image(self, img):
+        shape = img.shape
+        (w, h) = img.shape[:2]
+        if w == h:
+            return img
+        if w < h:
+            padding = int((h - w) / 2)
+            new_shape = list(shape)
+            new_shape[:2] = [h, h]
+            imgp = np.zeros(new_shape, dtype=img.dtype)
+            imgp[padding: w+padding] = img
+            return imgp
+        else:
+            assert w > h
+            padding = int((w - h) / 2)
+            new_shape = list(shape)
+            new_shape[:2] = [w, w]
+            imgp = np.zeros(new_shape, dtype=img.dtype)
+            imgp[:, padding: h+padding] = img
+            return imgp
