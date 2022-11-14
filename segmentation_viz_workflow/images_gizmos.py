@@ -6,6 +6,12 @@ Displays for labels and images
 from H5Gizmos import Stack, Slider, Image, Shelf, Button, Text, RangeSlider
 from array_gizmos import colorizers
 
+
+class compareTimeStamps:
+    """
+    Show image and labels for 2 time stamps.
+    """
+
 class ImageAndLabels2d:
 
     """
@@ -14,7 +20,7 @@ class ImageAndLabels2d:
 
     def __init__(self, side, timestamp):
         self.side = side
-        self.timestamp = timestamp
+        #self.timestamp = timestamp
         self.image_display = Image(height=side, width=side)
         self.labels_display = Image(height=side, width=side)
         displays = Shelf([
@@ -26,6 +32,10 @@ class ImageAndLabels2d:
             self.info_area,
             displays,
         ])
+        self.reset(timestamp)
+
+    def reset(self, timestamp):
+        self.timestamp = timestamp
         self.img = None
         self.labels = None
         self.focus_mask = None
@@ -84,7 +94,6 @@ class ImageAndLabels2d:
         cmask = self.compare_mask
         if fmask is not None:
             white = [255,255,255]
-            print("label overlay", labels.shape, fmask.shape)
             labels = colorizers.overlay_color(labels, fmask, white)
         for (mask, color) in [
             (self.focus_mask, self.focus_color),
