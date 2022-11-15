@@ -80,7 +80,13 @@ class Node:
         pid = None
         if self.parent is not None:
             pid = self.parent.node_id
-        return "Node" + repr((self.node_id, self.timestamp_ordinal, self.label, pid))
+        t = None
+        if self._track:
+            t = self._track.node_id
+        l = None
+        if self._lineage_root:
+            l = self._lineage_root.node_id
+        return "Node" + repr((self.node_id, self.timestamp_ordinal, self.label, pid, t, l))
 
     def set_parent(self, parent):
         assert type(parent) is Node, "bad parent type: " + repr([parent, type(parent)])
@@ -196,13 +202,17 @@ class TimeStamp(NodeGroup):
 
     def color_mapping_array(self, maxlabel=None):
         l2n = self.label_to_node
+        max_node_label = max(l2n.keys())
         if maxlabel is None:
-            maxlabel = max(l2n.keys())
+            maxlabel = max_node_label
+        else:
+            maxlabel = max(maxlabel, max_node_label)
         result = np.zeros((maxlabel + 1, 3), dtype=np.ubyte)
         # map any unassigned labels to grey
         result[1:] = 128
         for (label, node) in l2n.items():
             result[label] = node.color_array
+        return result
 
     def json_object(self):
         return dict(
