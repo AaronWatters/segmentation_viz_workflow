@@ -33,6 +33,10 @@ class CompareTimeStamps:
         self.theta = 0
         self.phi = 0
 
+    def configure_gizmo(self):
+        self.parent_display.configure_gizmo()
+        self.child_display.configure_gizmo()
+
     def set_parent_timestamp(self, ordinal):
         ts = self.forest.ordinal_to_timestamp.get(ordinal)
         if ts is None:
@@ -89,6 +93,7 @@ class ImageAndLabels2d:
         self.reset(timestamp)
 
     def reset(self, timestamp=None, forest=None):
+        print("resetting", self)
         self.timestamp = timestamp
         #self.color_mapping_array = timestamp.color_mapping_array()
         self.img = None
@@ -99,16 +104,24 @@ class ImageAndLabels2d:
         self.compare_mask = None
         self.compare_color = None
         self.volume_shape = None
+        self.label_volume = None
+        self.image_volume = None
+        self.volume_shape = None
         if forest is not None and timestamp is not None:
             ordinal = timestamp.ordinal
             label_volume = forest.load_labels_for_timestamp(ordinal)
             if label_volume is None:
-                self.info_area.text(repr(ordinal) + " has no label data.")
+                msg = "Timestamp %s has no label data" % ordinal
+                print(msg)
+                self.info(msg)
             else:
                 image_volume = forest.load_image_for_timestamp(ordinal)
                 if image_volume is None:
-                    self.info_area.text(repr(ordinal) + " has no image data.")
+                    msg = "Timestamp %s has no image data" % ordinal
+                    print(msg)
+                    self.info(msg)
                 else:
+                    self.info("Loaded timestamp " + repr(ordinal))
                     self.load_volumes(label_volume, image_volume)
 
     def load_volumes(self, label_volume, image_volume):
@@ -174,6 +187,7 @@ class ImageAndLabels2d:
         labels = self.labels
         maxlabel = labels.max()
         color_mapping_array = self.timestamp.color_mapping_array(maxlabel)
+        self.color_mapping_array = color_mapping_array # for debug
         labels = colorizers.colorize_array(labels, color_mapping_array)
         img = self.img
         fmask = self.focus_mask
