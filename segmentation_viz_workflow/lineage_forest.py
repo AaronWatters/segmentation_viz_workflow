@@ -5,6 +5,8 @@ OO structure for cell lineage tracking.
 
 
 from array_gizmos import color_list
+import os
+import numpy as np
 
 
 class Node:
@@ -192,6 +194,16 @@ class TimeStamp(NodeGroup):
                     result = ordinal
         return result
 
+    def color_mapping_array(self, maxlabel=None):
+        l2n = self.label_to_node
+        if maxlabel is None:
+            maxlabel = max(l2n.keys())
+        result = np.zeros((maxlabel + 1, 3), dtype=np.ubyte)
+        # map any unassigned labels to grey
+        result[1:] = 128
+        for (label, node) in l2n.items():
+            result[label] = node.color_array
+
     def json_object(self):
         return dict(
             ordinal=self.ordinal,
@@ -230,6 +242,8 @@ class Forest:
     def __init__(self):
         self.id_to_node = {}
         self.ordinal_to_timestamp = {}
+        self.label_volume_loader = None
+        self.image_volume_loader = None
         self.reset()
 
     def reset(self):
@@ -240,6 +254,36 @@ class Forest:
         self.id_to_lineage = None
         self.id_to_track = {}
         self.track_order = None
+
+    def load_image_for_timestamp(self, ts_ordinal):
+        loader = self.image_volume_loader
+        assert loader is not None, "No loader for images defined."
+        return loader(ts_ordinal)
+
+    def load_labels_for_timestamp(self, ts_ordinal):
+        loader = self.label_volume_loader
+        assert loader is not None, "No loader for labels defined."
+        return loader(ts_ordinal)
+
+    def load_klb_using_file_patterns(
+        self,
+        image_pattern="klbOut_Cam_Long_%(ordinal)05d.crop.klb",  # eg
+        label_pattern="klbOut_Cam_Long_%(ordinal)05d.crop_cp_masks.klb", # eg
+    ):
+        def img_loader(ordinal, pattern=image_pattern):
+            import pyklb
+            subs = {"ordinal": ordinal}
+            path = pattern % subs
+            if os.path.exists(path):
+                return pyklb.readfull(path)
+            else:
+                return None  # no data for this timeslice.
+        def label_loader(ordinal):
+            return img_loader(ordinal, label_pattern)
+        self.image_volume_loader = img_loader
+        self.label_volume_loader = label_loader
+        self.image_pattern = image_pattern
+        self.label_pattern = label_pattern
 
     def assign_colors_to_lineages(self):
         return self.assign_colors_to_tracks(id_to_collection=self.id_to_lineage)
