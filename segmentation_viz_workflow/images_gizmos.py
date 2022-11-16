@@ -6,6 +6,9 @@ Displays for labels and images
 import numpy as np
 from H5Gizmos import Stack, Slider, Image, Shelf, Button, Text, RangeSlider
 from array_gizmos import colorizers, operations3d
+from scipy.ndimage import gaussian_filter
+
+ENHANCE_CONTRAST = True
 
 
 class CompareTimeStamps:
@@ -19,7 +22,9 @@ class CompareTimeStamps:
         self.title = title
         # gizmo scaffolding
         self.title_area = Text(self.title)
+        self.title_area.resize(width=side * 2)
         self.info_area = Text("Building scaffolding.")
+        self.info_area.resize(width=side * 2)
         self.parent_display = ImageAndLabels2d(side, None)
         self.child_display = ImageAndLabels2d(side, None)
         self.displays = Stack([ 
@@ -173,6 +178,7 @@ class ImageAndLabels2d:
             self.labels_display,
         ])
         self.info_area = Text("Image and Labels")
+        self.info_area.resize(width=side * 2)
         self.gizmo = Stack([
             self.info_area,
             displays,
@@ -223,6 +229,14 @@ class ImageAndLabels2d:
         slicing = operations3d.positive_slicing(label_volume)
         self.label_volume = operations3d.slice3(label_volume, slicing)
         self.image_volume = operations3d.slice3(image_volume, slicing)
+        # image enhancement
+        if ENHANCE_CONTRAST:
+            im = self.unenhanced_image_volume = self.image_volume
+            im = im.astype(np.float)
+            im = gaussian_filter(im, sigma=1)
+            im = colorizers.scaleN(im, to_max=10000)
+            #im = colorizers.enhance_contrast(im,cutoff=0.01)
+            self.image_volume = im
         self.volume_shape = self.label_volume.shape
 
     def project2d(self, comparison):
@@ -230,6 +244,8 @@ class ImageAndLabels2d:
         rimage = comparison.rotate_image(self.image_volume)
         labels2d = operations3d.extrude0(rlabels)
         image2d = rimage.max(axis=0)  # maximum value projection.
+        if ENHANCE_CONTRAST:
+            image2d = colorizers.enhance_contrast(image2d, cutoff=0.05)
         self.load_images(image2d, labels2d)
 
     def info(self, text):
