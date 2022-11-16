@@ -10,7 +10,7 @@ from scipy.ndimage import gaussian_filter
 from . import lineage_gizmo
 
 ENHANCE_CONTRAST = True
-
+dummy_image = np.zeros((2,2), dtype=np.int)
 
 class LineageViewer:
 
@@ -19,8 +19,8 @@ class LineageViewer:
         self.side = side
         self.title = title
         self.compare = CompareTimeStamps(forest, side, title)
-        self.lineage = lineage_gizmo.LineageDisplay(2 * side, 2 * side)
-        self.detail = lineage_gizmo.TimeSliceDetail(height=side * 0.2, width=4*side)
+        self.lineage = lineage_gizmo.LineageDisplay(2 * side, 2.5 * side)
+        self.detail = lineage_gizmo.TimeSliceDetail(height=side * 0.3, width=5*side)
         self.info_area = Text("Data not yet loaded.")
         self.gizmo = Stack([ 
             [self.compare.gizmo, self.lineage.gizmo],
@@ -34,9 +34,23 @@ class LineageViewer:
     def configure_gizmo(self):
         self.lineage.configure_canvas(self.ts_select_callback)
         self.lineage.load_forest(self.forest)
+        self.detail.configure_canvas()
 
     def ts_select_callback(self, ordinal):
         self.info("ts selected: " + repr(ordinal))
+        try:
+            tjson = self.forest.timestamp_region_json(ordinal)
+        except Exception as e:
+            self.info("for ts %s got %s" % (ordinal, e))
+            raise
+        else:
+            self.detail.load_json(tjson)
+            self.compare.clear_images()
+            self.compare.set_child_timestamp(ordinal)
+            if ordinal > 0:
+                self.compare.set_parent_timestamp(ordinal - 1)
+            self.compare.project2d()
+            self.compare.display_images()
 
 class CompareTimeStamps:
     """
@@ -180,6 +194,12 @@ class CompareTimeStamps:
         self.parent_display.display_images()
         self.child_display.display_images()
 
+    def clear_images(self):
+        self.parent_display.clear_images()
+        self.child_display.clear_images()
+        self.parent_display.reset()
+        self.child_display.reset()
+
     def rotate_image(self, img):
         sl = self.slicing
         simg = img
@@ -267,12 +287,15 @@ class ImageAndLabels2d:
         self.volume_shape = self.label_volume.shape
 
     def project2d(self, comparison):
-        rlabels = comparison.rotate_image(self.label_volume)
-        rimage = comparison.rotate_image(self.image_volume)
-        labels2d = operations3d.extrude0(rlabels)
-        image2d = rimage.max(axis=0)  # maximum value projection.
-        if ENHANCE_CONTRAST:
-            image2d = colorizers.enhance_contrast(image2d, cutoff=0.05)
+        image2d = labels2d = dummy_image
+        if self.label_volume is not None:
+            rlabels = comparison.rotate_image(self.label_volume)
+            labels2d = operations3d.extrude0(rlabels)
+        if self.image_volume is not None:
+            rimage = comparison.rotate_image(self.image_volume)
+            image2d = rimage.max(axis=0)  # maximum value projection.
+            if ENHANCE_CONTRAST:
+                image2d = colorizers.enhance_contrast(image2d, cutoff=0.05)
         self.load_images(image2d, labels2d)
 
     def info(self, text):
@@ -313,6 +336,10 @@ class ImageAndLabels2d:
         self.focus_mask = colorizers.boundary_image(labels, label)
         self.focus_color = node.color_array
 
+    def clear_images(self):
+        self.load_images(dummy_image, dummy_image)
+        self.display_images()
+
     def load_images(self, img, labels):
         img = colorizers.scale256(img)  # ???? xxxx
         img = colorizers.to_rgb(img, scaled=False)
@@ -327,7 +354,9 @@ class ImageAndLabels2d:
         #label = self.focus_label
         labels = self.labels
         maxlabel = labels.max()
-        color_mapping_array = self.timestamp.color_mapping_array(maxlabel)
+        color_mapping_array = None
+        if self.timestamp is not None:
+            color_mapping_array = self.timestamp.color_mapping_array(maxlabel)
         self.color_mapping_array = color_mapping_array # for debug
         labels = colorizers.colorize_array(labels, color_mapping_array)
         img = self.img
