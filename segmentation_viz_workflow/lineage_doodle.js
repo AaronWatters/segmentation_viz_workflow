@@ -19,7 +19,11 @@ class LineageDisplay {
         this.hovered_ts = null;
         this.selected_ts = null;
         this.json_ob = null;
+        this.selected_ts_callback = null;
     }
+    on_select_ts(callback) {
+        this.selected_ts_callback = callback;
+    };
     update_status() {
         var h = this.hovered_ts;
         var s = this.selected_ts;
@@ -126,6 +130,10 @@ class LineageDisplay {
         })
         this.selected_ts = nearest;
         this.update_status();
+        var cb = this.selected_ts_callback;
+        if (cb) {
+            cb(nearest);
+        }
     };
     no_hover(event) {
         this.hover_rect.change({
