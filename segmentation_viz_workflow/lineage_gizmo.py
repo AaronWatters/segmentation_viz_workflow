@@ -34,15 +34,24 @@ class TimeSliceDetail:
 
 class LineageDisplay(TimeSliceDetail):
 
-    def configure_canvas(self):
+    def configure_canvas(self, select_ts_callback=None):
         # run after gizmo is displayed.
         gizmo = self.gizmo
         element = gizmo.element
         window = gizmo.window
         do(self.gizmo.element.empty())
         self.detail_link = gizmo.cache("tsdetail", gizmo.new(window.LineageDisplay, element, self.width, self.height))
+        do(self.detail_link.on_select_ts(select_ts_callback));
         #do(init)
 
+    def load_forest(self, forest):
+        F = forest
+        F.find_tracks_and_lineages()
+        F.assign_offsets()
+        F.assign_colors_to_tracks()
+        F.assign_colors_to_lineages()
+        fjson = F.json_ob()
+        self.load_json(fjson)
 
 async def test_task():
     from H5Gizmos import Html
