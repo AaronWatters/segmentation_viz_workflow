@@ -7,9 +7,36 @@ import numpy as np
 from H5Gizmos import Stack, Slider, Image, Shelf, Button, Text, RangeSlider
 from array_gizmos import colorizers, operations3d
 from scipy.ndimage import gaussian_filter
+from . import lineage_gizmo
 
 ENHANCE_CONTRAST = True
 
+
+class LineageViewer:
+
+    def __init__(self, forest, side, title="Lineage Viewer"):
+        self.forest = forest
+        self.side = side
+        self.title = title
+        self.compare = CompareTimeStamps(forest, side, title)
+        self.lineage = lineage_gizmo.LineageDisplay(2 * side, 2 * side)
+        self.detail = lineage_gizmo.TimeSliceDetail(height=side * 0.2, width=4*side)
+        self.info_area = Text("Data not yet loaded.")
+        self.gizmo = Stack([ 
+            [self.compare.gizmo, self.lineage.gizmo],
+            self.detail.gizmo,
+            self.info_area,
+        ])
+
+    def info(self, text):
+        self.info_area.text(text)
+
+    def configure_gizmo(self):
+        self.lineage.configure_canvas(self.ts_select_callback)
+        self.lineage.load_forest(self.forest)
+
+    def ts_select_callback(self, ordinal):
+        self.info("ts selected: " + repr(ordinal))
 
 class CompareTimeStamps:
     """
@@ -25,8 +52,8 @@ class CompareTimeStamps:
         self.title_area.resize(width=side * 2)
         self.info_area = Text("Building scaffolding.")
         self.info_area.resize(width=side * 2)
-        self.parent_display = ImageAndLabels2d(side, None)
-        self.child_display = ImageAndLabels2d(side, None)
+        self.parent_display = ImageAndLabels2d(side, None, title="Parent images")
+        self.child_display = ImageAndLabels2d(side, None, title="Child images")
         self.displays = Stack([ 
             self.title_area,
             self.parent_display.gizmo,
@@ -168,7 +195,7 @@ class ImageAndLabels2d:
     Fixed rotation view of image and labels for a timestamp.
     """
 
-    def __init__(self, side, timestamp=None):
+    def __init__(self, side, timestamp=None, title="Image and Labels"):
         self.side = side
         #self.timestamp = timestamp
         self.image_display = Image(height=side, width=side)
@@ -177,7 +204,7 @@ class ImageAndLabels2d:
             self.image_display,
             self.labels_display,
         ])
-        self.info_area = Text("Image and Labels")
+        self.info_area = Text(title)
         self.info_area.resize(width=side * 2)
         self.gizmo = Stack([
             self.info_area,
