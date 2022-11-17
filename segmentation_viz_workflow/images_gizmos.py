@@ -4,7 +4,7 @@ Displays for labels and images
 """
 
 import numpy as np
-from H5Gizmos import Stack, Slider, Image, Shelf, Button, Text, RangeSlider
+from H5Gizmos import Stack, Slider, Image, Shelf, Button, Text, RangeSlider, do
 from array_gizmos import colorizers, operations3d
 from scipy.ndimage import gaussian_filter
 from . import lineage_gizmo
@@ -19,7 +19,7 @@ class LineageViewer:
         self.side = side
         self.title = title
         self.compare = CompareTimeStamps(forest, side, title)
-        self.lineage = lineage_gizmo.LineageDisplay(2 * side, 2.5 * side)
+        self.lineage = lineage_gizmo.LineageDisplay(2.5 * side, 2 * side)
         self.detail = lineage_gizmo.TimeSliceDetail(height=side * 0.3, width=5*side)
         self.info_area = Text("Data not yet loaded.")
         self.gizmo = Stack([ 
@@ -35,6 +35,7 @@ class LineageViewer:
         self.lineage.configure_canvas(self.ts_select_callback)
         self.lineage.load_forest(self.forest)
         self.detail.configure_canvas()
+        self.compare.configure_gizmo()
 
     def ts_select_callback(self, ordinal):
         self.info("ts selected: " + repr(ordinal))
@@ -151,6 +152,19 @@ class CompareTimeStamps:
             ]
         ]
 
+    def reset_slider_maxes(self):
+        Mc = self.child_display.shape()
+        Mp = self.parent_display.shape()
+        M = Mc
+        if Mp is not None:
+            if M is None:
+                M = Mp
+            else:
+                M = np.maximum(M, Mp)
+        for (slider, maximum) in zip([self.I_slider, self.J_slider, self.K_slider], M):
+            do(slider.element.slider({"maximum": maximum}))
+        self.info_area.text("Maxima: " + repr(list(M)))
+
     def configure_gizmo(self):
         self.parent_display.configure_gizmo()
         self.child_display.configure_gizmo()
@@ -162,6 +176,7 @@ class CompareTimeStamps:
             self.info_area.text("No such parent timestamp ordinal: " + repr(ordinal))
         else:
             self.parent_display.reset(ts, self.forest, self)
+            self.reset_slider_maxes()
 
     def set_child_timestamp(self, ordinal):
         ts = self.forest.ordinal_to_timestamp.get(ordinal)
@@ -169,6 +184,7 @@ class CompareTimeStamps:
             self.info_area.text("No such child timestamp ordinal: " + repr(ordinal))
         else:
             self.child_display.reset(ts, self.forest, self)
+            self.reset_slider_maxes()
 
     def project_and_display(self, *ignored):
         self.theta = self.theta_slider.value
@@ -248,6 +264,8 @@ class ImageAndLabels2d:
         self.label_volume = None
         self.image_volume = None
         self.volume_shape = None
+        # flag set when the projection is derived from real data
+        self.valid_projection = None
         if comparison is not None:
             assert type(comparison) is CompareTimeStamps
         self.comparison = comparison
@@ -268,6 +286,14 @@ class ImageAndLabels2d:
                     self.info("Loaded timestamp " + repr(ordinal))
                     self.load_volumes(label_volume, image_volume)
 
+    def shape(self):
+        a = self.label_volume
+        if a is None:
+            a = self.image_volume
+        if a is None:
+            return None
+        return a.shape
+
     def load_volumes(self, label_volume, image_volume):
         l_s = label_volume.shape
         i_s = image_volume.shape
@@ -287,6 +313,7 @@ class ImageAndLabels2d:
         self.volume_shape = self.label_volume.shape
 
     def project2d(self, comparison):
+        self.valid_projection = False # defaul
         image2d = labels2d = dummy_image
         if self.label_volume is not None:
             rlabels = comparison.rotate_image(self.label_volume)
@@ -296,6 +323,7 @@ class ImageAndLabels2d:
             image2d = rimage.max(axis=0)  # maximum value projection.
             if ENHANCE_CONTRAST:
                 image2d = colorizers.enhance_contrast(image2d, cutoff=0.05)
+            self.valid_projection = True
         self.load_images(image2d, labels2d)
 
     def info(self, text):
@@ -362,22 +390,24 @@ class ImageAndLabels2d:
         img = self.img
         fmask = self.focus_mask
         #cmask = self.compare_mask
-        if fmask is not None:
-            white = [255,255,255]
-            labels = colorizers.overlay_color(labels, fmask, white)
-        for (mask, color) in [
-            (self.focus_mask, self.focus_color),
-            (self.compare_mask, self.compare_color)]:
-            if mask is not None:
-                assert color is not None, "no color for mask?"
-                #assert img.shape == mask.shape, "shapes don't match: " + repr([img.shape, mask.shape])
-                img = colorizers.overlay_color(img, mask, color, center=True)
+        if self.valid_projection:
+            if fmask is not None:
+                white = [255,255,255]
+                labels = colorizers.overlay_color(labels, fmask, white)
+            for (mask, color) in [
+                (self.focus_mask, self.focus_color),
+                (self.compare_mask, self.compare_color)]:
+                if mask is not None:
+                    assert color is not None, "no color for mask?"
+                    #assert img.shape == mask.shape, "shapes don't match: " + repr([img.shape, mask.shape])
+                    img = colorizers.overlay_color(img, mask, color, center=True)
         img = self.pad_image(img)
         labels = self.pad_image(labels)
         self.image_display.change_array(img)
         self.labels_display.change_array(labels)
 
     def pad_image(self, img):
+        "Pad image to square shape."
         shape = img.shape
         (w, h) = img.shape[:2]
         if w == h:
