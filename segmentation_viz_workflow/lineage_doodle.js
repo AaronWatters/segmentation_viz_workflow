@@ -272,7 +272,7 @@ class TimeSliceDetail {
         this.event_rect.on("mouseout", event_out);
         var event_click = function(event) { that.select_node(event); };
         this.event_rect.on("click", event_click);
-
+        this.status_change_callback = null;
     };
     update_status() {
         var h = this.hovering_node;
@@ -315,6 +315,36 @@ class TimeSliceDetail {
             this.selected_ancestor = nearest;
         }
         this.update_status();
+        var callback = this.status_change_callback;
+        if (callback) {
+            callback(this.selected_child.identity, this.selected_ancestor.identity)
+        }
+    }
+    update_selections(child_identity, ancestor_identity) {
+        console.log("update selection", child_identity, ancestor_identity)
+        var i2n = this.json_ob.id_to_node;
+        this.selected_ancestor = i2n[ancestor_identity];
+        this.selected_child = i2n[child_identity];
+        this.update_rectangles()
+    };
+    update_rectangles() {
+        this.update_rectangle(this.child_rect, this.selected_child, "black");
+        this.update_rectangle(this.ancestor_rect, this.selected_ancestor, "silver");
+    }
+    update_rectangle(rectangle, node, color) {
+        if (node) {
+            rectangle.change({
+                x: node.x,
+                y: node.y,
+                color: color,
+            });
+        } else {
+            rectangle.change({
+                x: -1,
+                y: -1,
+                color: invisible,
+            });
+        }
     }
     no_hover() {
         this.hovering_node = null;
