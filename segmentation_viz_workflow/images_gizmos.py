@@ -36,6 +36,7 @@ class LineageViewer:
         self.lineage.load_forest(self.forest)
         self.detail.configure_canvas()
         self.compare.configure_gizmo()
+        self.compare.on_label_select(self.update_label_selection)
 
     def ts_select_callback(self, ordinal):
         self.info("ts selected: " + repr(ordinal))
@@ -52,6 +53,18 @@ class LineageViewer:
                 self.compare.set_parent_timestamp(ordinal - 1)
             self.compare.project2d()
             self.compare.display_images()
+
+    def update_label_selection(self, *ignored):
+        compare = self.compare
+        self.update_selected_nodes(compare.child_display.focus_node(), compare.parent_display.focus_node())
+
+    def update_selected_nodes(self, child_node, parent_node):
+        cid = pid = None
+        if child_node is not None:
+            cid = child_node.node_id
+        if parent_node is not None:
+            pid = parent_node.node_id
+        self.detail.update_selections(cid, pid)
 
 class CompareTimeStamps:
     """
@@ -84,6 +97,7 @@ class CompareTimeStamps:
         self.slicing = None
         self.theta = 0
         self.phi = 0
+        self.label_select_callback = None
 
     def get_sliders(self, side):
         limit = np.pi
@@ -152,6 +166,11 @@ class CompareTimeStamps:
             ]
         ]
 
+    def on_label_select(self, callback):
+        self.on_label_select_callback = callback
+        self.child_display.on_label_select(callback)
+        self.parent_display.on_label_select(callback)
+
     def reset_slider_maxes(self):
         Mc = self.child_display.shape()
         Mp = self.parent_display.shape()
@@ -177,6 +196,7 @@ class CompareTimeStamps:
             self.info_area.text("No such parent timestamp ordinal: " + repr(ordinal))
         self.parent_display.reset(ts, self.forest, self)
         self.reset_slider_maxes()
+        return ts
 
     def set_child_timestamp(self, ordinal):
         ts = self.forest.ordinal_to_timestamp.get(ordinal)
@@ -184,6 +204,7 @@ class CompareTimeStamps:
             self.info_area.text("No such child timestamp ordinal: " + repr(ordinal))
         self.child_display.reset(ts, self.forest, self)
         self.reset_slider_maxes()
+        return ts
 
     def project_and_display(self, *ignored):
         self.theta = self.theta_slider.value
@@ -247,7 +268,11 @@ class ImageAndLabels2d:
         ])
         self.img_volume = None
         self.label_volume = None
+        self.on_label_select_callback = None
         self.reset(timestamp)
+
+    def on_label_select(self, callback):
+        self.on_label_select_callback = callback
 
     def reset(self, timestamp=None, forest=None, comparison=None):
         self.timestamp = timestamp
@@ -284,6 +309,14 @@ class ImageAndLabels2d:
                 else:
                     self.info("Loaded timestamp " + repr(ordinal))
                     self.load_volumes(label_volume, image_volume)
+
+    def focus_node(self):
+        timestamp = self.timestamp
+        focus_label = self.focus_label
+        if timestamp is not None and focus_label is not None:
+            return timestamp.label_to_node.get(focus_label)
+        else:
+            return None
 
     def shape(self):
         a = self.label_volume
@@ -351,6 +384,9 @@ class ImageAndLabels2d:
             self.focus_color = None
         if self.comparison is not None:
             self.comparison.display_images()
+        callback = self.on_label_select_callback
+        if callback:
+            callback(self.focus_label)
 
     def create_mask(self):
         label = self.focus_label
