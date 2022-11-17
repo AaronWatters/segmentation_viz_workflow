@@ -37,6 +37,7 @@ class LineageViewer:
         self.detail.configure_canvas()
         self.compare.configure_gizmo()
         self.compare.on_label_select(self.update_label_selection)
+        self.detail.on_select_node(self.update_selected_ids)
 
     def ts_select_callback(self, ordinal):
         self.info("ts selected: " + repr(ordinal))
@@ -57,6 +58,13 @@ class LineageViewer:
     def update_label_selection(self, *ignored):
         compare = self.compare
         self.update_selected_nodes(compare.child_display.focus_node(), compare.parent_display.focus_node())
+        #compare.display_images()
+
+    def update_selected_ids(self, child_id, parent_id):
+        id_to_node = self.forest.id_to_node
+        child_node = id_to_node.get(child_id)
+        parent_node = id_to_node.get(parent_id)
+        self.update_selected_nodes(child_node, parent_node)
 
     def update_selected_nodes(self, child_node, parent_node):
         cid = pid = None
@@ -64,6 +72,10 @@ class LineageViewer:
             cid = child_node.node_id
         if parent_node is not None:
             pid = parent_node.node_id
+        compare = self.compare
+        compare.child_display.focus_on_node(child_node)
+        compare.parent_display.focus_on_node(parent_node)
+        compare.display_images()
         self.detail.update_selections(cid, pid)
 
 class CompareTimeStamps:
@@ -382,11 +394,19 @@ class ImageAndLabels2d:
         else:
             self.focus_label = None
             self.focus_color = None
-        if self.comparison is not None:
-            self.comparison.display_images()
+        # comparison display is triggerred by callback below.
+        #if self.comparison is not None:
+        #    self.comparison.display_images()
         callback = self.on_label_select_callback
         if callback:
             callback(self.focus_label)
+
+    def focus_on_node(self, node):
+        self.focus_label = None
+        self.focus_color = None
+        if node is not None:
+            self.focus_label = node.label
+            self.focus_color = node.color_array
 
     def create_mask(self):
         label = self.focus_label
