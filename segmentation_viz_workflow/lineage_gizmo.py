@@ -29,6 +29,9 @@ class TimeSliceDetail:
         self.detail_link = gizmo.cache("tsdetail", gizmo.new(window.TimeSliceDetail, element, self.width, self.height))
         #do(init)
 
+    def on_select_node(self, callback):
+        do(self.detail_link.on_status_change(callback))
+
     def update_selections(self, child_id, parent_id):
         do(self.detail_link.update_selections(child_id, parent_id))
 
