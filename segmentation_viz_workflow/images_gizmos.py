@@ -161,9 +161,10 @@ class CompareTimeStamps:
                 M = Mp
             else:
                 M = np.maximum(M, Mp)
-        for (slider, maximum) in zip([self.I_slider, self.J_slider, self.K_slider], M):
-            do(slider.element.slider({"maximum": maximum}))
-        self.info_area.text("Maxima: " + repr(list(M)))
+        if M is not None:
+            for (slider, maximum) in zip([self.I_slider, self.J_slider, self.K_slider], M):
+                do(slider.element.slider({"maximum": maximum}))
+            self.info_area.text("Maxima: " + repr(list(M)))
 
     def configure_gizmo(self):
         self.parent_display.configure_gizmo()
@@ -174,17 +175,15 @@ class CompareTimeStamps:
         ts = self.forest.ordinal_to_timestamp.get(ordinal)
         if ts is None:
             self.info_area.text("No such parent timestamp ordinal: " + repr(ordinal))
-        else:
-            self.parent_display.reset(ts, self.forest, self)
-            self.reset_slider_maxes()
+        self.parent_display.reset(ts, self.forest, self)
+        self.reset_slider_maxes()
 
     def set_child_timestamp(self, ordinal):
         ts = self.forest.ordinal_to_timestamp.get(ordinal)
         if ts is None:
             self.info_area.text("No such child timestamp ordinal: " + repr(ordinal))
-        else:
-            self.child_display.reset(ts, self.forest, self)
-            self.reset_slider_maxes()
+        self.child_display.reset(ts, self.forest, self)
+        self.reset_slider_maxes()
 
     def project_and_display(self, *ignored):
         self.theta = self.theta_slider.value
@@ -265,7 +264,7 @@ class ImageAndLabels2d:
         self.image_volume = None
         self.volume_shape = None
         # flag set when the projection is derived from real data
-        self.valid_projection = None
+        self.valid_projection = False
         if comparison is not None:
             assert type(comparison) is CompareTimeStamps
         self.comparison = comparison
@@ -314,7 +313,7 @@ class ImageAndLabels2d:
 
     def project2d(self, comparison):
         self.valid_projection = False # defaul
-        image2d = labels2d = dummy_image
+        image2d = labels2d = None
         if self.label_volume is not None:
             rlabels = comparison.rotate_image(self.label_volume)
             labels2d = operations3d.extrude0(rlabels)
@@ -365,14 +364,22 @@ class ImageAndLabels2d:
         self.focus_color = node.color_array
 
     def clear_images(self):
-        self.load_images(dummy_image, dummy_image)
+        self.load_images(None, None)
         self.display_images()
 
     def load_images(self, img, labels):
-        img = colorizers.scale256(img)  # ???? xxxx
-        img = colorizers.to_rgb(img, scaled=False)
-        self.img = img
-        self.labels = labels
+        if img is None:
+            self.img = dummy_image
+            self.valid_projection = False
+        else:
+            img = colorizers.scale256(img)  # ???? xxxx
+            img = colorizers.to_rgb(img, scaled=False)
+            self.img = img
+            self.valid_projection = True
+        if labels is None:
+            self.labels = dummy_image
+        else:
+            self.labels = labels
 
     def load_mask(self, other):
         self.compare_mask = other.focus_mask
