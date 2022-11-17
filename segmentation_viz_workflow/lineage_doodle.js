@@ -168,6 +168,7 @@ class TimeSliceDetail {
         this.status_element = $("<div>timeslice detail canvas initialized</div>").appendTo(element);
         this.canvas_element.dual_canvas_helper(config);
         this.frame = null;
+        this.status_change_callback = null;
         /*
         element.circle({x:0, y:0, r:100, color:"#e99"})
         element.text({x:0, y:0, text:"Hello World", degrees:45,
@@ -272,7 +273,9 @@ class TimeSliceDetail {
         this.event_rect.on("mouseout", event_out);
         var event_click = function(event) { that.select_node(event); };
         this.event_rect.on("click", event_click);
-        this.status_change_callback = null;
+    };
+    on_status_change(callback) {
+        this.status_change_callback = callback;
     };
     update_status() {
         var h = this.hovering_node;
@@ -298,7 +301,7 @@ class TimeSliceDetail {
         var loc = event.model_location;
         var nearest = this.nearest_node(loc);
         if (nearest.is_child) {
-            console.log("selected child", nearest);
+            //console.log("selected child", nearest);
             this.child_rect.change({
                 x: nearest.x,
                 y: nearest.y,
@@ -306,7 +309,7 @@ class TimeSliceDetail {
             });
             this.selected_child = nearest;
         } else {
-            console.log("selected ancestor", nearest);
+            //console.log("selected ancestor", nearest);
             this.ancestor_rect.change({
                 x: nearest.x,
                 y: nearest.y,
@@ -317,11 +320,19 @@ class TimeSliceDetail {
         this.update_status();
         var callback = this.status_change_callback;
         if (callback) {
-            callback(this.selected_child.identity, this.selected_ancestor.identity)
+            var cid = null
+            var pid = null
+            if (this.selected_child) {
+                cid = this.selected_child.identity
+            }
+            if (this.selected_ancestor) {
+                pid = this.selected_ancestor.identity;
+            }
+            callback(cid, pid)
         }
     }
     update_selections(child_identity, ancestor_identity) {
-        console.log("update selection", child_identity, ancestor_identity)
+        //console.log("update selection", child_identity, ancestor_identity)
         var i2n = this.json_ob.id_to_node;
         this.selected_ancestor = i2n[ancestor_identity];
         this.selected_child = i2n[child_identity];
