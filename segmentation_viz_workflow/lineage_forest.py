@@ -192,7 +192,7 @@ class TimeStamp(NodeGroup):
         self.label_to_node[node.label] = node
 
     def farthest_parent_ordinal(self):
-        result = None
+        result = self.ordinal
         for node in self.id_to_node.values():
             if node.parent is not None:
                 ordinal = node.parent.timestamp_ordinal
@@ -282,7 +282,8 @@ class Forest:
     ):
         def img_loader(ordinal, pattern=image_pattern):
             import pyklb
-            subs = {"ordinal": ordinal}
+            #subs = {"ordinal": ordinal}
+            subs = {"ordinal": ordinal}  # files are zero based?
             path = pattern % subs
             if os.path.exists(path):
                 return pyklb.readfull(path)
@@ -294,6 +295,30 @@ class Forest:
         self.label_volume_loader = label_loader
         self.image_pattern = image_pattern
         self.label_pattern = label_pattern
+
+    def check_labels(self):
+        """
+        Check for existence of label files for timestamps
+        and whether the labels for the timestamps match the labels in the label volume.
+        """
+        o2t = self.ordinal_to_timestamp
+        for ordinal in sorted(o2t.keys()):
+            volume = self.load_labels_for_timestamp(ordinal)
+            if volume is None:
+                print("No volume file for", ordinal)
+            else:
+                ts = o2t[ordinal]
+                ts_labels = set(ts.label_to_node.keys())
+                volume_labels = set(np.unique(volume)) - set([0])
+                volume_missing = sorted(ts_labels - volume_labels)
+                ts_missing = sorted(volume_labels - ts_labels)
+                if volume_missing or ts_missing:
+                    print("ts ordinal", ordinal)
+                    print("     labels missing in lineage", ts_missing)
+                    print("     labels missing in volume", volume_missing)
+                else:
+                    pass
+                    #print("    labels match.")
 
     def assign_colors_to_lineages(self):
         return self.assign_colors_to_tracks(id_to_collection=self.id_to_lineage)
