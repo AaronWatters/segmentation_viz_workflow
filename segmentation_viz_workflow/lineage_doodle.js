@@ -1,10 +1,13 @@
 
 var invisible = "rgba(0,0,0,0)";
 var semi_transparent = "rgba(0,0,0,0.1)";
+var up_arrow_key = 38;
+var down_arrow_key = 40;
 
 class LineageDisplay {
     // xxxx Should refactor/unify with TS detail belows
     constructor(element, width, height) {
+        var that = this;
         this.element = element;
         this.width = width;
         this.height = height;
@@ -13,6 +16,13 @@ class LineageDisplay {
             height: height,
         };
         this.canvas_element = $("<div/>").appendTo(element);
+
+        // stuff for arrow key handling...
+        this.keypress_target = that.element.parent();
+        this.keypress_target.keydown(function(event) { that.keypress_handler(event); });
+        this.keypress_target.attr('tabindex', 0);
+        this.keypress_target.focus();
+
         this.status_element = $("<div>Lineage canvas initialized</div>").appendTo(element);
         this.canvas_element.dual_canvas_helper(config);
         this.frame = null;
@@ -120,10 +130,14 @@ class LineageDisplay {
         })
         this.hovered_ts = nearest;
         this.update_status();
+        this.keypress_target.focus();
     };
     select_ts(event) {
         var loc = event.model_location;
         var nearest = this.nearest_ts(loc);
+        this.focus_ts(nearest);
+    };
+    focus_ts(nearest) {
         this.select_rect.change({
             y: nearest,
             color: "black",
@@ -133,6 +147,23 @@ class LineageDisplay {
         var cb = this.selected_ts_callback;
         if (cb) {
             cb(nearest);
+        }
+        this.keypress_target.focus();
+    };
+    keypress_handler(event) {
+        var num = event.which;
+        console.log("keypress num: ", num);
+        var current_ts = this.selected_ts;
+        var new_ts = null;
+        if ((num == up_arrow_key) && (current_ts > 0)) {
+            new_ts = current_ts - 1;
+        }
+        if ((num == down_arrow_key) && (current_ts < this.json_ob.height)) {
+            new_ts = current_ts + 1;
+        }
+        if (new_ts !== null) {
+            this.focus_ts(new_ts);
+            event.preventDefault();  // don't propagate handled event
         }
     };
     no_hover(event) {
