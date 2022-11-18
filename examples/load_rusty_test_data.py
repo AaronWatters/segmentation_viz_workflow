@@ -12,11 +12,12 @@ fn = "Combined.json"
 json_ob = json.load(open(fn))
 F = lineage_forest.make_forest_from_haydens_json_graph(json_ob)
 
-trivialize = False
+trivialize = True
 
 if trivialize:
     F.use_trivial_null_loaders()
 else:
+    assert trivialize, "non-trivial implementation is not finished."
     img_folder = "/Users/awatters/test/mouse_embryo_images/"
     image_pattern = img_folder + "klbOut_Cam_Long_%(ordinal)05d.crop.klb"
     label_pattern = img_folder + "klbOut_Cam_Long_%(ordinal)05d.crop_cp_masks.klb"
