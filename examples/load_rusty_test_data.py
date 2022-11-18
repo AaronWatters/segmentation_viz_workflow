@@ -23,6 +23,8 @@ else:
     #label_pattern = img_folder + "klbOut_Cam_Long_%(ordinal)05d.crop_cp_masks.klb"
     label_pattern = "/mnt/home/awatters/ceph/220827_stack1/Segmentation/stack_1_channel_0_obj_left/cropped/klbOut_Cam_Long_%(ordinal)05d.crop_cp_masks.klb"
     image_pattern = "/mnt/home/awatters/ceph/220827_stack1/Segmentation/stack_1_channel_0_obj_left/membrane/cropped/klbOut_Cam_Long_%(ordinal)05d.crop.klb"
+    label_pattern = "labels/klbOut_Cam_Long_%(ordinal)05d.crop_cp_masks.klb"
+    image_pattern = "images/klbOut_Cam_Long_%(ordinal)05d.crop.klb"
     F.load_klb_using_file_patterns(
             image_pattern=image_pattern,
             label_pattern=label_pattern,
