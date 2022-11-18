@@ -310,7 +310,7 @@ class ImageAndLabels2d:
             label_volume = forest.load_labels_for_timestamp(ordinal)
             if label_volume is None:
                 msg = "Timestamp %s has no label data" % ordinal
-                print(msg)
+                #print(msg)
                 self.info(msg)
             else:
                 image_volume = forest.load_image_for_timestamp(ordinal)
