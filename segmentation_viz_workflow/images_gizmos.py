@@ -194,7 +194,11 @@ class CompareTimeStamps:
                 M = np.maximum(M, Mp)
         if M is not None:
             for (slider, maximum) in zip([self.I_slider, self.J_slider, self.K_slider], M):
-                do(slider.element.slider({"maximum": maximum}))
+                do(slider.element.slider({"maximum": maximum, }))
+                # https://stackoverflow.com/questions/6333152/how-to-refresh-a-jquery-ui-slider-after-setting-min-or-max-values
+                # This should be wrapped in gz_jQuery?
+                do(slider.element.slider("option", "max", maximum))
+                do(slider.element.slider("option", "values", [0, maximum]))
             self.info_area.text("Maxima: " + repr(list(M)))
 
     def configure_gizmo(self):
