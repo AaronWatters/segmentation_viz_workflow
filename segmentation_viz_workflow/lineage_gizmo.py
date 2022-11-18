@@ -14,9 +14,10 @@ def install_js_files(to_gizmo):
 
 class TimeSliceDetail:
 
-    def __init__(self, height, width):
+    def __init__(self, height, width, colorize="tracks"):
         self.height = height
         self.width = width
+        self.colorize = colorize
         self.gizmo = Html("<div>Gizmo placeholder.</div>")
         install_js_files(self.gizmo)
 
@@ -54,8 +55,10 @@ class LineageDisplay(TimeSliceDetail):
         F = forest
         F.find_tracks_and_lineages()
         F.assign_offsets()
-        F.assign_colors_to_tracks()
-        F.assign_colors_to_lineages()
+        if self.colorize == "tracks":
+            F.assign_colors_to_tracks()
+        else:
+            F.assign_colors_to_lineages()
         fjson = F.json_ob()
         self.load_json(fjson)
 

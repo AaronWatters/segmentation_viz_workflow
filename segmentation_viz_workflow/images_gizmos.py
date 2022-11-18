@@ -14,12 +14,12 @@ dummy_image = np.zeros((2,2), dtype=np.int)
 
 class LineageViewer:
 
-    def __init__(self, forest, side, title="Lineage Viewer"):
+    def __init__(self, forest, side, title="Lineage Viewer", colorize="tracks"):
         self.forest = forest
         self.side = side
         self.title = title
         self.compare = CompareTimeStamps(forest, side, title)
-        self.lineage = lineage_gizmo.LineageDisplay(2.5 * side, 2 * side)
+        self.lineage = lineage_gizmo.LineageDisplay(2.5 * side, 2 * side, colorize=colorize)
         self.detail = lineage_gizmo.TimeSliceDetail(height=side * 0.3, width=5*side)
         self.info_area = Text("Data not yet loaded.")
         self.gizmo = Stack([ 
