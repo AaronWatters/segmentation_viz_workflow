@@ -303,7 +303,7 @@ class Forest:
         self.label_volume_loader = null_loader
         
 
-    def check_labels(self):
+    def check_labels(self, trivial=True):
         """
         Check for existence of label files for timestamps
         and whether the labels for the timestamps match the labels in the label volume.
@@ -313,7 +313,7 @@ class Forest:
             volume = self.load_labels_for_timestamp(ordinal)
             if volume is None:
                 print("No volume file for", ordinal)
-            else:
+            elif not trivial:
                 ts = o2t[ordinal]
                 ts_labels = set(ts.label_to_node.keys())
                 volume_labels = set(np.unique(volume)) - set([0])
