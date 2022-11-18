@@ -28,11 +28,14 @@ else:
             label_pattern=label_pattern,
         )
     test_ordinal = 29
-    img = F.load_image_for_timestamp(test_ordinal)
-    assert img is not None, "Could not load image for: " + repr(test_ordinal)
-    lab = F.load_labels_for_timestamp(test_ordinal)
-    assert lab is not None, "Could not load image for: " + repr(test_ordinal)
+    #img = F.load_image_for_timestamp(test_ordinal)
+    #assert img is not None, "Could not load image for: " + repr(test_ordinal)
+    #lab = F.load_labels_for_timestamp(test_ordinal)
+    #assert lab is not None, "Could not load image for: " + repr(test_ordinal)
 print()
 print("CHECKING LABELS")
 print()
-F.check_labels()
+
+import cProfile
+
+cProfile.run("F.check_labels()")
