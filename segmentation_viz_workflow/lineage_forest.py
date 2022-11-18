@@ -472,15 +472,20 @@ def make_forest_from_haydens_json_graph(json_graph):
     Return a forest.
     """
     #edges = json_graph['G_based_on_nn_combined']['Edges']
-    edges = None
+    nodes = edges = None
     # hack to handle random naming changes.
     for name in json_graph:
+        graph = json_graph[name]
         if name.startswith("G"):
-            edges = json_graph[name]["Edges"]
+            edges = graph["Edges"]
+            nodes = graph["Nodes"]
     assert edges is not None, "Could not find edges: " + repr(list(json_graph.keys()))
     result = Forest()
     all_ids = set()
     parent_map = {}
+    for thing in nodes:
+        node_id = thing["Name"]
+        all_ids.add(node_id)
     for thing in edges:
         [parent_id, child_id] = thing["EndNodes"]
         all_ids.add(parent_id)
