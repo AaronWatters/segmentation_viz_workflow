@@ -296,6 +296,13 @@ class Forest:
         self.image_pattern = image_pattern
         self.label_pattern = label_pattern
 
+    def use_trivial_null_loaders(self):
+        def null_loader(ordinal):
+            return None
+        self.image_volume_loader = null_loader
+        self.label_volume_loader = null_loader
+        
+
     def check_labels(self):
         """
         Check for existence of label files for timestamps
